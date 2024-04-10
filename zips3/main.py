@@ -74,9 +74,9 @@ def create_table_entries(doc_list,barebones = False):
         else :
             for child in has_zip :
                 table_data.append("  |  ".join([entity,ancestors,child.split(sep)[-1] if barebones else child]))
-    print(json.dumps(doc_list,indent=1))
-    print(json.dumps(entity_ancestor,indent=3))
-    print(json.dumps(ancestor_entity,indent=3))
+    # print(json.dumps(doc_list,indent=1))
+    # print(json.dumps(entity_ancestor,indent=3))
+    # print(json.dumps(ancestor_entity,indent=3))
     return table_data
         
 
@@ -103,5 +103,5 @@ async def upload_file(file: UploadFile = File(...)):
         json_structure = {os.path.basename(temp_file_path):traverse_directory(temp_file_path)}
         return json_structure
     finally:
-        # shutil.rmtree(temp_dir)
-        print(temp_dir)
+        shutil.rmtree(temp_dir)
+        # print(temp_dir)

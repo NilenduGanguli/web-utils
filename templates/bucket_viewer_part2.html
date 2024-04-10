@@ -1,0 +1,72 @@
+
+
+// Function to populate table with JSON data
+function populateTable() {
+    const tableBody = document.getElementById('metadataTable').getElementsByTagName('tbody')[0];
+    for (const filename in jsonData) {
+        const { metadata } = jsonData[filename];
+        const newRow = tableBody.insertRow();
+        newRow.className = 'metadata-row';
+        const checkboxCell = newRow.insertCell(0);
+        checkboxCell.innerHTML = `<input type="checkbox" name="selectedFiles" value="${filename}">`;
+        const filenameCell = newRow.insertCell(1);
+        filenameCell.textContent = filename;
+        const metadataCell = newRow.insertCell(2);
+        const subtable = createSubtable(metadata);
+        metadataCell.appendChild(subtable);
+    }
+}
+
+// Function to create subtable for metadata
+function createSubtable(metadata) {
+    const subtable = document.createElement('table');
+    const subtableBody = document.createElement('tbody');
+
+    let rowCount = 0;
+    for (const key in metadata) {
+        const subrow = subtableBody.insertRow();
+        subrow.className = rowCount % 2 === 0 ? 'even-row' : 'odd-row';
+        rowCount++;
+        const keyCell = subrow.insertCell(0);
+        keyCell.textContent = key.replace('_', ' ');
+        const valueCell = subrow.insertCell(1);
+        valueCell.textContent = metadata[key];
+    }
+
+    subtable.appendChild(subtableBody);
+    subtable.className = 'subtable';
+    return subtable;
+}
+
+// Function to send selected files to an endpoint
+function sendSelectedFiles() {
+    const selectedFiles = document.querySelectorAll('input[name="selectedFiles"]:checked');
+    const selectedFileData = {};
+    selectedFiles.forEach(file => {
+        const filename = file.value;
+        selectedFileData[filename] = jsonData[filename];
+    });
+    const formData = new FormData();
+    formData.append('selected_json',JSON.stringify(selectedFileData));
+    fetch('http://localhost:8003/upload_files_documentum/send', {
+        method: 'POST',
+        // headers: {
+        //     'Content-Type': 'application/json'
+        // },
+        body: formData
+    }).then(response => {
+        if (response.ok) {
+            console.log('Files sent successfully');
+        } else {
+            console.error('Error sending files');
+        }
+    }).catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+// Call populateTable function to initialize the table with JSON data
+populateTable();
+</script>
+</body>
+</html>

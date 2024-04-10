@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Input Form</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  #textInputForm {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 500px;
+    text-align: center;
+  }
+  #textInputForm_inner {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: auto;
+    text-align: center;
+  }
+  
+  h2 {
+    margin-top: 0;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+  input[type="text"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+  
+  button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+</style>
+</head>
+<body>
+
+<div id="textInputForm">
+  <h2>Select S3 Location</h2>
+  <form id="textInputForm_inner">
+    <label for="textInput">Enter Bucket Name:</label><br>
+    <input type="text" id="textInput" name="textInput"><br><br>
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+document.getElementById("textInputForm").addEventListener("submit", function(event) {
+  event.preventDefault(); // Prevent default form submission
+  
+  // Get input value
+  var inputValue = document.getElementById("textInput").value;
+  
+  // Encode URI component to handle special characters
+  var encodedInputValue = encodeURIComponent(inputValue);
+  
+  // Construct URL with input value
+  var url = "http://localhost:8003/upload_files_documentum/bucket_browser?bucket_name=" + encodedInputValue;
+  
+  // Send GET request
+  fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text();
+    })
+    .then(data => {
+    //   console.log('Response from server:', data);
+      // Check if response is HTML content
+      if (data.startsWith("<!DOCTYPE html>")) {
+        // If response is HTML, load it in the current window
+        document.open();
+        document.write(data);
+        document.close();
+      } else {
+        // If response is not HTML, show it in a popup
+        alert(data);
+      }
+    })
+    .catch(error => {
+      console.error('There was a problem with the fetch operation:', error);
+      // Show error message in a popup
+      alert('Error: Unable to fetch data from server.');
+    });
+});
+</script>
+
+</body>
+</html>

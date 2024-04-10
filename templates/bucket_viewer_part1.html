@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Metadata Viewer</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    th, td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+    th {
+        background-color: #8cc6ed;
+    }
+    .subtable {
+        width: 100%;
+    }
+    .subtable th, .subtable td {
+        border: none;
+        padding: 4px;
+    }
+    .container {
+        margin: 20px;
+    }
+    .metadata-row .odd-row {
+        background-color: #8cc6ed;
+    }
+    .metadata-row .even-row {
+        background-color: #ffffff;
+    }
+    button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>File Metadata Viewer</h2>
+    <table id="metadataTable">
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>File Name</th>
+                <th>Metadata</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Table body will be populated dynamically -->
+        </tbody>
+    </table>
+    <button onclick="sendSelectedFiles()">Send Selected Files</button>
+</div>
+
+<script>
+    // Sample JSON data
+    const jsonData = 
