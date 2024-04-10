@@ -1,0 +1,6 @@
+pip install fastapi uvicorn python-multipart
+
+uvicorn main:app --port 8000 --reload
+
+please send a post request with { file : zip10.zip}
+zip10.zip along with other zips are present in zip1 folder

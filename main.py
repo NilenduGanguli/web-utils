@@ -40,6 +40,10 @@ def upload_directory_to_s3(directory_path, s3_url, s3_bucketname, access_key_id,
                 print(f"Uploaded {file_path} to {s3_bucketname}/{s3_object_key}")
             except Exception as e:
                 print(f"Failed to upload {file_path}: {e}")
+
+@app.post("/upload")
+async def upload_files(files: List[UploadFile] = File(...), metadata: str = Form(...)):
+    pass
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...), metadata: str = Form(...)):
     # Create a dictionary from the JSON string metadata
