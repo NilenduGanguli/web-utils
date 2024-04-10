@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Files to S3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #fileInput {
+            margin-bottom: 20px;
+        }
+
+        .file-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            height: 300px;
+        }
+
+        .pdf-preview {
+            width: 300px;
+            height: auto;
+            margin-right: 20px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .pdf-preview-object {
+            width: 100%;
+            height: 100%;
+        }
+
+        .file-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .file-name {
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .remove-file-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-right: 20px;
+            margin-left: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .remove-file-btn:hover {
+            background-color: #c82333;
+        }
+
+        .metadata-input {
+            flex: 1;
+            height: 80%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: vertical; /* Allow vertical resizing */
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Files to S3</h1>
+    <input type="file" id="fileInput" multiple>
+    <div id="filePreviews"></div>
+    <button onclick="uploadFiles()">Upload Files</button>
+
+    <script>
+        function uploadFiles() {
+    const files = document.getElementById('fileInput').files;
+    const metadataInputs = document.querySelectorAll('.metadata-input');
+    const metadata = {};
+
+    // Collect metadata from text boxes
+    metadataInputs.forEach(input => {
+        const fileId = input.dataset.fileId;
+        metadata[fileId] = input.value;
+    });
+
+    const formData = new FormData();
+
+    // Add files to FormData object
+    for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+    }
+
+    // Append metadata as JSON
+    formData.append('metadata', JSON.stringify(metadata));
+
+    // Send FormData to server-side endpoint for S3 upload
+    fetch('http://localhost:8003/upload', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log('Files uploaded successfully');
+        } else {
+            console.error('Failed to upload files');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Function to add metadata input fields dynamically
+document.getElementById('fileInput').addEventListener('change', function() {
+    const files = this.files;
+    const filePreviews = document.getElementById('filePreviews');
+    filePreviews.innerHTML = '';
+
+    for (let i = 0; i < files.length; i++) {
+        
+        // Create container for each file
+        const fileContainer = document.createElement('div');
+        fileContainer.classList.add('file-container');
+
+        // Create preview element (embedded PDF viewer)
+        const preview = document.createElement('div');
+        preview.classList.add('pdf-preview');
+        const object = document.createElement('object');
+        object.classList.add('pdf-preview-object');
+        object.type = 'application/pdf';
+        object.data = URL.createObjectURL(files[i]);
+        preview.appendChild(object);
+
+        // Create file info container
+        const fileInfo = document.createElement('div');
+        fileInfo.classList.add('file-info');
+
+        // Create file name element
+        const fileName = document.createElement('div');
+        fileName.classList.add('file-name');
+        fileName.textContent = files[i].name;
+        const fileId = fileName.textContent;
+
+        // Create remove file button
+        const removeButton = document.createElement('button');
+        removeButton.classList.add('remove-file-btn');
+        removeButton.textContent = 'Remove';
+        removeButton.addEventListener('click', function() {
+            fileContainer.remove();
+        });
+
+        // Append file name and remove button to file info container
+        fileInfo.appendChild(fileName);
+        fileInfo.appendChild(removeButton);
+
+        // Create metadata input field (textarea)
+        const input = document.createElement('textarea');
+        input.setAttribute('placeholder', 'Enter metadata');
+        input.setAttribute('class', 'metadata-input');
+        input.setAttribute('data-file-id', fileId);
+
+        // Append elements to the file container
+        fileContainer.appendChild(preview);
+        preview.appendChild(fileInfo);
+        fileContainer.appendChild(input);
+
+        // Append file container to the file previews container
+        filePreviews.appendChild(fileContainer);
+    }
+});
+
+    </script>
+</body>
+</html>
