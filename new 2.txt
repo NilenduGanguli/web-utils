@@ -1,0 +1,38 @@
+MongoDB is a sub-par choice for a scalable logging solution. There are the usual reasons for this (write performance under load for example). I'd like to put forward one more, which is that it only solves a single use case in a logging solution.
+
+A strong logging solution needs to cover at least the following stages:
+
+Collection
+Transport
+Processing
+Storage
+Search
+Visualisation
+
+mic issue 2 mins
+
+
+MongoDB as a choice only solves the Storage use case (albeit somewhat poorly). Once the complete chain is analysed, there are more appropriate solutions.
+
+@KazukiOhta mentions a few options. My preferred end to end solution these days involves:
+
+Logstash-Forwarder for Collection & Transport
+Logstash & Riemann for Processing
+ElasticSearch for Storage & Queries
+Kibana3 for Visualisation
+
+The underlying use of ElasticSearch for log data storage uses the current best of breed NoSQL solution for the logging and searching use case. The fact that Logstash-Forwarder / Logstash / ElasticSearch / Kibana3 are under the umbrella of ElasticSearch makes for an even more compelling argument.
+
+Since Logstash can also act as a Graphite proxy, a very similar chain can be built for the associated problem of collecting and analysing metrics (not just logs).
+
+neelima.dhamne81@gmail.com
+vinitlondheb@gmail.com
+
+
+document category
+document subcategory
+description
+
+check_entitlement returns null => check only his folder
+
+enlarge document preview

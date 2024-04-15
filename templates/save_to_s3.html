@@ -95,6 +95,10 @@
 <body>
     <h1>Upload Files to S3</h1>
     <input type="file" id="fileInput" multiple>
+    <form id="textInputForm_inner">
+        <label for="textInput">Enter SOEID:</label><br>
+        <input type="text" id="textInput" name="textInput"><br><br>
+      </form>
     <div id="filePreviews"></div>
     <button onclick="uploadFiles()">Upload Files</button>
 
@@ -116,10 +120,12 @@
     for (let i = 0; i < files.length; i++) {
         formData.append('files', files[i]);
     }
-
+    var inputValue = document.getElementById("textInput").value;
+    // console.log(inputValue)
     // Append metadata as JSON
     formData.append('metadata', JSON.stringify(metadata));
-
+    // var encodedInputValue = encodeURIComponent(inputValue);
+    formData.append('bucket_name', inputValue);
     // Send FormData to server-side endpoint for S3 upload
     fetch('http://localhost:8003/upload', {
         method: 'POST',
@@ -131,6 +137,20 @@
         } else {
             console.error('Failed to upload files');
         }
+        return response.text();
+    })
+    .then(data => {
+    //   console.log('Response from server:', data);
+      // Check if response is HTML content
+      if (data.startsWith("<!DOCTYPE html>")) {
+        // If response is HTML, load it in the current window
+        document.open();
+        document.write(data);
+        document.close();
+      } else {
+        // If response is not HTML, show it in a popup
+        alert(data);
+      }
     })
     .catch(error => console.error('Error:', error));
 }
@@ -164,7 +184,9 @@ document.getElementById('fileInput').addEventListener('change', function() {
         const fileName = document.createElement('div');
         fileName.classList.add('file-name');
         fileName.textContent = files[i].name;
-        const fileId = fileName.textContent;
+        const fileId_d = fileName.textContent;
+        const fileId_dc = fileName.textContent;
+        const fileId_ds = fileName.textContent;
 
         // Create remove file button
         const removeButton = document.createElement('button');
@@ -179,15 +201,27 @@ document.getElementById('fileInput').addEventListener('change', function() {
         fileInfo.appendChild(removeButton);
 
         // Create metadata input field (textarea)
-        const input = document.createElement('textarea');
-        input.setAttribute('placeholder', 'Enter metadata');
-        input.setAttribute('class', 'metadata-input');
-        input.setAttribute('data-file-id', fileId);
+        const input_dc = document.createElement('textarea');
+        input_dc.setAttribute('placeholder', 'Enter Document Category');
+        input_dc.setAttribute('class', 'metadata-input');
+        input_dc.setAttribute('data-file-id', fileId_dc);
+
+        const input_ds = document.createElement('textarea');
+        input_ds.setAttribute('placeholder', 'Enter Document Subcategory');
+        input_ds.setAttribute('class', 'metadata-input');
+        input_ds.setAttribute('data-file-id', fileId_ds);
+
+        const input_d = document.createElement('textarea');
+        input_d.setAttribute('placeholder', 'Enter Document Description');
+        input_d.setAttribute('class', 'metadata-input');
+        input_d.setAttribute('data-file-id', fileId_d);
 
         // Append elements to the file container
         fileContainer.appendChild(preview);
         preview.appendChild(fileInfo);
-        fileContainer.appendChild(input);
+        fileContainer.appendChild(input_dc);
+        fileContainer.appendChild(input_ds);
+        fileContainer.appendChild(input_d);
 
         // Append file container to the file previews container
         filePreviews.appendChild(fileContainer);

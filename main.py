@@ -45,17 +45,20 @@ def upload_directory_to_s3(directory_path, s3_url, s3_bucketname, access_key_id,
                       aws_access_key_id=access_key_id,
                       aws_secret_access_key=secret_access_key,
                       )
-
-    # Walk through the directory and upload files to S3
+    if '/' in s3_bucketname:
+        bucket_name, prefix = s3_bucketname.split('/', 1)
+    else:
+        bucket_name = s3_bucketname
+        prefix = ''
+    print(prefix)
     for root, dirs, files in os.walk(directory_path):
         for file in files:
             file_path = os.path.join(root, file)
-            s3_object_key = os.path.relpath(file_path, directory_path)
-
+            s3_object_key = prefix + "/" + os.path.relpath(file_path, directory_path)
             # Upload the file to S3
             try:
-                s3.upload_file(file_path, s3_bucketname, s3_object_key)
-                print(f"Uploaded {file_path} to {s3_bucketname}/{s3_object_key}")
+                s3.upload_file(file_path, bucket_name, s3_object_key)
+                print(f"Uploaded {file_path} to {bucket_name}/{s3_object_key}")
             except Exception as e:
                 print(f"Failed to upload {file_path}: {e}")
 def fetch_object(s3_url, s3_bucketname, access_key_id, secret_access_key, object_name, destination_file):
@@ -68,52 +71,107 @@ def fetch_object(s3_url, s3_bucketname, access_key_id, secret_access_key, object
         print(f"Object {object_name} fetched to {destination_file}")
     except Exception as e:
         print(f"Error fetching object: {e}")
+#old version
+# def check_bucket(s3_url, s3_bucketname, access_key_id, secret_access_key):
+#     s3 = boto3.client('s3',
+#                       endpoint_url=s3_url,
+#                       aws_access_key_id=access_key_id,
+#                       aws_secret_access_key=secret_access_key)
 
-def check_bucket(s3_url, s3_bucketname, access_key_id, secret_access_key):
+#     try:
+#         s3.head_bucket(Bucket=s3_bucketname)
+#         return True
+#     except s3.exceptions.ClientError as e:
+#         error_code = e.response['Error']['Code']
+#         if error_code == '404':
+#             return False
+#         else:
+#             print("Error occurred: ", e)
+#             return False
+def check_bucket(s3_url, bucket_or_path, access_key_id, secret_access_key):
     s3 = boto3.client('s3',
                       endpoint_url=s3_url,
                       aws_access_key_id=access_key_id,
                       aws_secret_access_key=secret_access_key)
-
-    # Check if the bucket exists
+    
     try:
-        s3.head_bucket(Bucket=s3_bucketname)
-        return True
+        if '/' in bucket_or_path:
+            bucket_name, prefix = bucket_or_path.split('/', 1)
+        else:
+            bucket_name = bucket_or_path
+            prefix = ''
+        s3.head_bucket(Bucket=bucket_name)
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=1)
+        if 'Contents' in response:
+            return True
+        else:
+            return False
+        
     except s3.exceptions.ClientError as e:
         error_code = e.response['Error']['Code']
         if error_code == '404':
+            # Bucket not found
             return False
         else:
-            # Other error, handle as needed
             print("Error occurred: ", e)
             return False
-
-def list_buckets(s3_url, s3_bucketname, access_key_id, secret_access_key):
-    # Initialize a session using MinIO S3 credentials
+#old version
+# def list_buckets(s3_url, s3_bucketname, access_key_id, secret_access_key):
+#     s3 = boto3.client('s3',
+#                       endpoint_url=s3_url,
+#                       aws_access_key_id=access_key_id,
+#                       aws_secret_access_key=secret_access_key,
+#                       )
+#     bucketList = {}
+#     try:
+#         objects = s3.list_objects_v2(Bucket=s3_bucketname)
+#         if 'Contents' in objects:
+#             for obj in objects['Contents']:
+#                 key = obj['Key']
+#                 obj_info = {
+#                     'filesize': str(int(obj['Size']/1024)),  # File size in bytes
+#                     'file_type': key.split('.')[-1],  # File type
+#                     'date_modified': obj['LastModified'].strftime('%Y-%m-%d %H:%M:%S')  # Date modified
+#                 }
+#                 bucketList[key] = obj_info
+#         else:
+#             print("Bucket is empty.")
+#     except Exception as e:
+#         print(f"Error listing objects: {e}")
+#     finally:
+#         return bucketList
+def list_buckets(s3_url, bucket_or_folder_name, access_key_id, secret_access_key):
     s3 = boto3.client('s3',
                       endpoint_url=s3_url,
                       aws_access_key_id=access_key_id,
                       aws_secret_access_key=secret_access_key,
                       )
-    bucketList = {}
-    # Walk through the directory and upload files to S3
+    
+    bucket_list = {}
+    if '/' in bucket_or_folder_name:
+        bucket_name, prefix = bucket_or_folder_name.split('/', 1)
+    else:
+        bucket_name = bucket_or_folder_name
+        prefix = ''
+    # Using paginator to handle a large number of objects
+    paginator = s3.get_paginator('list_objects_v2')
     try:
-        objects = s3.list_objects_v2(Bucket=s3_bucketname)
-        if 'Contents' in objects:
-            for obj in objects['Contents']:
-                key = obj['Key']
-                obj_info = {
-                    'filesize': str(int(obj['Size']/1024)),  # File size in bytes
-                    'file_type': key.split('.')[-1],  # File type
-                    'date_modified': obj['LastModified'].strftime('%Y-%m-%d %H:%M:%S')  # Date modified
-                }
-                bucketList[key] = obj_info
-        else:
-            print("Bucket is empty.")
+        for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    key = obj['Key']
+                    obj_info = {
+                        'filesize': str(int(obj['Size'] / 1024)),  # File size in kilobytes
+                        'file_type': key.split('.')[-1],  # File type
+                        'date_modified': obj['LastModified'].strftime('%Y-%m-%d %H:%M:%S')  # Date modified
+                    }
+                    bucket_list[key] = obj_info
+            else:
+                print("No contents found in the specified bucket or folder.")
     except Exception as e:
         print(f"Error listing objects: {e}")
-    finally:
-        return bucketList
+    
+    return bucket_list
 
 @app.get("/upload_files_local")
 async def browse_files_local():
@@ -125,39 +183,54 @@ async def browse_files_local():
     file_path = "./templates/bucket_browser.html"
     return FileResponse(file_path,media_type="text/html")
 
+# document category
+# document subcategory
+# description
+
+# check_entitlement returns null => check only his folder
+
+# enlarge document preview
 @app.get("/upload_files_documentum/bucket_browser")
 async def browse_files_local(bucket_name : str):
+    part1 = ""
+    part2 = ""
+    mid_data = "Error in Accessing or Parsing Bucket Contents!!"
     if not check_bucket(s3_url,bucket_name,access_key_id,secret_access_key):
         return f"Bucket Not Available at {s3_url}"
     else :
         file_path = "./templates/bucket_viewer.html"
         bucketlist = list_buckets(s3_url,bucket_name,access_key_id,secret_access_key)
-        if 'metadata.json' in bucketlist:
+        metadata_file_name = "/".join([*bucket_name.split("/")[1:],'metadata.json'])
+        if metadata_file_name in bucketlist:
+            print("Metadata file found at : "+bucket_name)
             temp_dir = tempfile.mkdtemp()
             try:
                 temp_file_path = os.path.join(temp_dir, "metadata.json")
-                print(temp_file_path)
-                fetch_object(s3_url,bucket_name,access_key_id,secret_access_key,'metadata.json',temp_file_path)
+                print("Saving Metadata to : "+temp_file_path)
+                if '/' in bucket_name:
+                    bucket_name, _ = bucket_name.split('/', 1)
+                fetch_object(s3_url,bucket_name,access_key_id,secret_access_key,metadata_file_name,temp_file_path)
                 with open(temp_file_path) as infile: 
                     metadata =json.loads(infile.read())
+                    print(metadata)
                     for item in bucketlist:
-                        if item in metadata:
-                            bucketlist[item].update({'alias':metadata[item]})
+                        if item.split("/")[-1] in metadata:
+                            bucketlist[item].update({'alias':metadata[item.split("/")[-1]]})
                 for item in bucketlist:
                     wrapper = bucketlist[item]
                     bucketlist[item] = {'metadata':wrapper}
             finally :
                 shutil.rmtree(temp_dir)
             mid_data = str(bucketlist)
-            part1 = ""
-            part2 = ""
             with open("./templates/bucket_viewer_part1.html","r") as infile:
                 part1 = infile.read()
             with open("./templates/bucket_viewer_part2.html","r") as infile:
                 part2 = infile.read()
-            return_string = part1 + mid_data + part2
-            return_file = io.BytesIO(return_string.encode("utf-8"))
-            # StreamingResponse(iter([return_file.getvalue()]), media_type="text/html")
+        else :
+            print("Metadata file NOT found at : "+bucket_name)
+        return_string = part1 + mid_data + part2
+        return_file = io.BytesIO(return_string.encode("utf-8"))
+        # StreamingResponse(iter([return_file.getvalue()]), media_type="text/html")
         return StreamingResponse(iter([return_file.getvalue()]), media_type="text/html")
     
 @app.post("/upload_files_documentum/send")
@@ -166,26 +239,27 @@ async def get_selected_files(selected_json : str = Form(...)):
 
 
 @app.post("/upload")
-async def upload_files(files: List[UploadFile] = File(...), metadata: str = Form(...)):
-    # Create a dictionary from the JSON string metadata
+async def upload_files(files: List[UploadFile] = File(...), metadata: str = Form(...), bucket_name : str = Form(...)):
     metadata_dict = json.loads(metadata)
-
-    # Create a temporary directory to store the files
+    print("Using Bucket : "+str(bucket_name))
+    if '/' in bucket_name:
+        bucket_name_trunc, _ = bucket_name.split('/', 1)
+    else :
+        bucket_name_trunc = bucket_name
+    if not check_bucket(s3_url,bucket_name_trunc,access_key_id,secret_access_key):
+        return f"Bucket Not Available at {s3_url}"
     with tempfile.TemporaryDirectory() as temp_dir:
-        print(temp_dir)
+        print("Using Temp Dir : " + str(temp_dir))
+        numfiles = len(files)
         for file in files:
-            # Save each file to the temporary directory
             file_path = os.path.join(temp_dir, file.filename)
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
 
-            # Write metadata to a JSON file with the same name as the uploaded file
         metadata_file_path = os.path.join(temp_dir,"metadata.json")
         with open(metadata_file_path, "w") as metadata_file:
             json.dump(metadata_dict, metadata_file)
-
-        # You can process the files further if needed, outside the 'with' block.
         if len(os.listdir(temp_dir)) >0:
-            upload_directory_to_s3(temp_dir,s3_url,s3_bucketname,access_key_id,secret_access_key)
+            upload_directory_to_s3(temp_dir,s3_url,bucket_name,access_key_id,secret_access_key)
 
-    return {"message": "Files uploaded successfully"}
+    return f"Files uploaded successfully : {numfiles} Files"
