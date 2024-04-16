@@ -55,8 +55,6 @@ def upload_directory_to_s3(directory_path, s3_url, s3_bucketname, access_key_id,
     else:
         bucket_name = s3_bucketname
         prefix = ''
-    print("bucket_name : " + bucket_name)
-    print("sub_path : " + prefix)
     for root, dirs, files in os.walk(directory_path):
         for file in files:
             file_path = os.path.join(root, file)
