@@ -14,9 +14,10 @@ from datetime import datetime
 
 
 s3_url = "http://localhost:9000"
-s3_bucketname = "test1"
+s3_bucketname_global = "test1"
 access_key_id = "accesskey"
 secret_access_key = "secretkey"
+strict_bucket = True
 
 app = FastAPI()
 app.add_middleware(
@@ -49,11 +50,17 @@ def upload_directory_to_s3(directory_path, s3_url, s3_bucketname, access_key_id,
                       aws_access_key_id=access_key_id,
                       aws_secret_access_key=secret_access_key,
                       )
-    if '/' in s3_bucketname:
-        bucket_name, prefix = s3_bucketname.split('/', 1)
-    else:
-        bucket_name = s3_bucketname
-        prefix = ''
+    if strict_bucket : 
+        bucket_name = s3_bucketname_global
+        prefix = s3_bucketname
+    else :
+        if '/' in s3_bucketname:
+            bucket_name, prefix = s3_bucketname.split('/', 1)
+        else:
+            bucket_name = s3_bucketname
+            prefix = ''
+    print("bucket_name : " + bucket_name)
+    print("sub_path : " + prefix)
     for root, dirs, files in os.walk(directory_path):
         for file in files:
             file_path = os.path.join(root, file)
@@ -103,9 +110,12 @@ def check_bucket(s3_url, bucket_or_path, access_key_id, secret_access_key):
         else:
             bucket_name = bucket_or_path
             prefix = ''
+        print("bucket_name : " + bucket_name)
+        print("sub_path : " + prefix)
         s3.head_bucket(Bucket=bucket_name)
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=1)
         if 'Contents' in response:
+            print("Check Bucket : " + bucket_or_path + " Success ")
             return True
         else:
             return False
@@ -198,14 +208,17 @@ async def browse_files_local(bucket_name : str, soeid : str):
     part1 = ""
     part2 = ""
     mid_data = "Error in Accessing or Parsing Bucket Contents!!"
+    if strict_bucket :
+        bucket_name = s3_bucketname_global+"/"+bucket_name
     if bucket_entitlement(soeid,bucket_name) :
         return f"Entitlements : {str(bucket_entitlement(soeid,bucket_name))}"
+    print("!!!"+bucket_name)
     if not check_bucket(s3_url,bucket_name,access_key_id,secret_access_key):
         return f"Bucket Not Available at {s3_url}"
     else :
-        file_path = "./templates/bucket_viewer.html"
         bucketlist = list_buckets(s3_url,bucket_name,access_key_id,secret_access_key)
         metadata_file_name = "/".join([*bucket_name.split("/")[1:],'metadata.json'])
+        print(metadata_file_name)
         if metadata_file_name in bucketlist:
             print("Metadata file found at : "+bucket_name)
             temp_dir = tempfile.mkdtemp()
@@ -248,6 +261,8 @@ async def get_selected_files(selected_json : str = Form(...)):
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...), metadata: str = Form(...), bucket_name : str = Form(...), soeid : str = Form(...)):
+    if strict_bucket :
+        bucket_name = s3_bucketname_global+"/"+bucket_name
     if bucket_entitlement(soeid,bucket_name) :
         return f"Entitlements : {str(bucket_entitlement(soeid,bucket_name))}"
     metadata_dict = json.loads(metadata)
