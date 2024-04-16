@@ -71,8 +71,10 @@
 <div id="textInputForm">
   <h2>Select S3 Location</h2>
   <form id="textInputForm_inner">
+    <label for="textInput">Enter SOEID:</label><br>
+    <input type="text" id="textInput_soeid" name="textInput"><br><br>
     <label for="textInput">Enter Bucket Name:</label><br>
-    <input type="text" id="textInput" name="textInput"><br><br>
+    <input type="text" id="textInput_bname" name="textInput"><br><br>
     <button type="submit">Send</button>
   </form>
 </div>
@@ -82,13 +84,14 @@ document.getElementById("textInputForm").addEventListener("submit", function(eve
   event.preventDefault(); // Prevent default form submission
   
   // Get input value
-  var inputValue = document.getElementById("textInput").value;
+  var inputValue_bname = document.getElementById("textInput_bname").value;
+  var inputValue_soeid = document.getElementById("textInput_soeid").value;
   
   // Encode URI component to handle special characters
-  var encodedInputValue = encodeURIComponent(inputValue);
-  
+  var encodedInputValue_bname = encodeURIComponent(inputValue_bname);
+  var encodedInputValue_soeid = encodeURIComponent(inputValue_soeid);
   // Construct URL with input value
-  var url = "http://localhost:8003/upload_files_documentum/bucket_browser?bucket_name=" + encodedInputValue;
+  var url = "http://localhost:8003/upload_files_documentum/bucket_browser?bucket_name=" + encodedInputValue_bname + "&soeid=" + encodedInputValue_soeid;
   
   // Send GET request
   fetch(url)

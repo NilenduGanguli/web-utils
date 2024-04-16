@@ -38,7 +38,11 @@ app.add_middleware(
 
 # class Files(BaseModel):
 #     files: Dict[str, FilesData]
-
+def bucket_entitlement(soeid : str, bucket_name : str):
+    if soeid in bucket_name :
+        return None
+    else :
+        return {"entitlement" : "!! service under development !!"}
 def upload_directory_to_s3(directory_path, s3_url, s3_bucketname, access_key_id, secret_access_key):
     s3 = boto3.client('s3',
                       endpoint_url=s3_url,
@@ -50,7 +54,6 @@ def upload_directory_to_s3(directory_path, s3_url, s3_bucketname, access_key_id,
     else:
         bucket_name = s3_bucketname
         prefix = ''
-    print(prefix)
     for root, dirs, files in os.walk(directory_path):
         for file in files:
             file_path = os.path.join(root, file)
@@ -191,10 +194,12 @@ async def browse_files_local():
 
 # enlarge document preview
 @app.get("/upload_files_documentum/bucket_browser")
-async def browse_files_local(bucket_name : str):
+async def browse_files_local(bucket_name : str, soeid : str):
     part1 = ""
     part2 = ""
     mid_data = "Error in Accessing or Parsing Bucket Contents!!"
+    if bucket_entitlement(soeid,bucket_name) :
+        return f"Entitlements : {str(bucket_entitlement(soeid,bucket_name))}"
     if not check_bucket(s3_url,bucket_name,access_key_id,secret_access_key):
         return f"Bucket Not Available at {s3_url}"
     else :
@@ -212,10 +217,13 @@ async def browse_files_local(bucket_name : str):
                 fetch_object(s3_url,bucket_name,access_key_id,secret_access_key,metadata_file_name,temp_file_path)
                 with open(temp_file_path) as infile: 
                     metadata =json.loads(infile.read())
-                    print(metadata)
                     for item in bucketlist:
                         if item.split("/")[-1] in metadata:
-                            bucketlist[item].update({'alias':metadata[item.split("/")[-1]]})
+                            sub_dict = metadata[item.split("/")[-1]]
+                            if isinstance(sub_dict,dict):
+                                bucketlist[item].update({'document_category':sub_dict["document_category"],'document_subcategory':sub_dict['document_subcategory'],'description':sub_dict['document_description']})
+                            else : 
+                                bucketlist[item].update({'alias':metadata[item.split("/")[-1]]})
                 for item in bucketlist:
                     wrapper = bucketlist[item]
                     bucketlist[item] = {'metadata':wrapper}
@@ -239,7 +247,9 @@ async def get_selected_files(selected_json : str = Form(...)):
 
 
 @app.post("/upload")
-async def upload_files(files: List[UploadFile] = File(...), metadata: str = Form(...), bucket_name : str = Form(...)):
+async def upload_files(files: List[UploadFile] = File(...), metadata: str = Form(...), bucket_name : str = Form(...), soeid : str = Form(...)):
+    if bucket_entitlement(soeid,bucket_name) :
+        return f"Entitlements : {str(bucket_entitlement(soeid,bucket_name))}"
     metadata_dict = json.loads(metadata)
     print("Using Bucket : "+str(bucket_name))
     if '/' in bucket_name:

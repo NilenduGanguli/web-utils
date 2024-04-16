@@ -97,7 +97,9 @@
     <input type="file" id="fileInput" multiple>
     <form id="textInputForm_inner">
         <label for="textInput">Enter SOEID:</label><br>
-        <input type="text" id="textInput" name="textInput"><br><br>
+        <input type="text" id="textInput_soeid" name="textInput"><br><br>
+        <label for="textInput">Enter Bucket Name:</label><br>
+        <input type="text" id="textInput_bname" name="textInput"><br><br>
       </form>
     <div id="filePreviews"></div>
     <button onclick="uploadFiles()">Upload Files</button>
@@ -111,21 +113,28 @@
     // Collect metadata from text boxes
     metadataInputs.forEach(input => {
         const fileId = input.dataset.fileId;
-        metadata[fileId] = input.value;
+        metadata[fileId] = {};
     });
-
+    metadataInputs.forEach(input => {
+        const fileId = input.dataset.fileId;
+        const category = input.id;
+        metadata[fileId][category] = input.value;
+    });
+    console.log(metadata);
     const formData = new FormData();
 
     // Add files to FormData object
     for (let i = 0; i < files.length; i++) {
         formData.append('files', files[i]);
     }
-    var inputValue = document.getElementById("textInput").value;
+    var inputValue_soeid = document.getElementById("textInput_soeid").value;
+    var inputValue_bname = document.getElementById("textInput_bname").value;
     // console.log(inputValue)
     // Append metadata as JSON
     formData.append('metadata', JSON.stringify(metadata));
     // var encodedInputValue = encodeURIComponent(inputValue);
-    formData.append('bucket_name', inputValue);
+    formData.append('soeid', inputValue_soeid);
+    formData.append('bucket_name', inputValue_bname);
     // Send FormData to server-side endpoint for S3 upload
     fetch('http://localhost:8003/upload', {
         method: 'POST',
@@ -196,24 +205,38 @@ document.getElementById('fileInput').addEventListener('change', function() {
             fileContainer.remove();
         });
 
+        // Create view PDF button
+        const viewButton = document.createElement('button');
+        viewButton.classList.add('view-pdf-btn');
+        viewButton.textContent = 'View PDF';
+        viewButton.addEventListener('click', function() {
+            // Open the PDF in a new window for an enlarged view
+            window.open(object.data, '_blank');
+        });
+
+
         // Append file name and remove button to file info container
         fileInfo.appendChild(fileName);
         fileInfo.appendChild(removeButton);
-
+        fileInfo.appendChild(viewButton);
+        
         // Create metadata input field (textarea)
         const input_dc = document.createElement('textarea');
         input_dc.setAttribute('placeholder', 'Enter Document Category');
         input_dc.setAttribute('class', 'metadata-input');
+        input_dc.setAttribute('id', 'document_category');
         input_dc.setAttribute('data-file-id', fileId_dc);
 
         const input_ds = document.createElement('textarea');
         input_ds.setAttribute('placeholder', 'Enter Document Subcategory');
         input_ds.setAttribute('class', 'metadata-input');
+        input_ds.setAttribute('id', 'document_subcategory');
         input_ds.setAttribute('data-file-id', fileId_ds);
 
         const input_d = document.createElement('textarea');
         input_d.setAttribute('placeholder', 'Enter Document Description');
         input_d.setAttribute('class', 'metadata-input');
+        input_d.setAttribute('id', 'document_description');
         input_d.setAttribute('data-file-id', fileId_d);
 
         // Append elements to the file container
