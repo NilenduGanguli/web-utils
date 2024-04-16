@@ -50,15 +50,11 @@ def upload_directory_to_s3(directory_path, s3_url, s3_bucketname, access_key_id,
                       aws_access_key_id=access_key_id,
                       aws_secret_access_key=secret_access_key,
                       )
-    if strict_bucket : 
-        bucket_name = s3_bucketname_global
-        prefix = s3_bucketname
-    else :
-        if '/' in s3_bucketname:
-            bucket_name, prefix = s3_bucketname.split('/', 1)
-        else:
-            bucket_name = s3_bucketname
-            prefix = ''
+    if '/' in s3_bucketname:
+        bucket_name, prefix = s3_bucketname.split('/', 1)
+    else:
+        bucket_name = s3_bucketname
+        prefix = ''
     print("bucket_name : " + bucket_name)
     print("sub_path : " + prefix)
     for root, dirs, files in os.walk(directory_path):
