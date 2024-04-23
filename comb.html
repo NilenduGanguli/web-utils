@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON Table</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 20px;
+        margin: 0;
+        padding: 20px;
+    }
+    ul {
+    list-style-type: none;
+    padding-left: 20px;
+    }
+    .file {
+        padding-left: 20px;
+        color: #666;
+    }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+    th {
+        background-color: #47bef5;
+    }
+    /* Apply background colors to alternate rows */
+    tr:nth-child(odd) {
+        background-color: #bebebe;
+    }
+    tr:nth-child(even) {
+        background-color: #ffffff;
+    }
+</style>
+</head>
+<body>
+<pre id="directory"></pre>
+<table id="jsonTable">
+    <!-- Table will be generated here -->
+</table>
+
+<script>
+    // Function to generate HTML for directory structure
+  function generateDirectoryHTML(directory, element, prefix = '') {
+    const keys = Object.keys(directory);
+    keys.forEach((key, index) => {
+      const isLast = index === keys.length - 1;
+      const newPrefix = prefix + (isLast ? '   ' : '|  ');
+      element.textContent += prefix + (isLast ? '└── ' : '├── ') + key + '\n';
+      if (Object.keys(directory[key]).length > 0) {
+        generateDirectoryHTML(directory[key], element, newPrefix);
+      }
+    });
+  }
+
+    fetch('URL_TO_YOUR_API_ENDPOINT')
+    .then(response => response.json())
+    .then(data => {
+        const directoryJSON = data["directory_structure"];
+        var jsonData = data["entity_ancestor_table"]
+    // Once data is fetched, generate directory structure and append to the page
+    const directoryElement = document.getElementById('directory');
+    generateDirectoryHTML(directoryJSON, directoryElement);
+    // Generate table
+    var table = document.getElementById('jsonTable');
+    var headerRow = table.insertRow();
+    jsonData[0].forEach(function(cellData) {
+        var headerCell = document.createElement('th');
+        headerCell.textContent = cellData;
+        headerRow.appendChild(headerCell);
+    });
+
+    for (var i = 1; i < jsonData.length; i++) {
+        var row = table.insertRow();
+        jsonData[i].forEach(function(cellData) {
+            var cell = row.insertCell();
+            cell.textContent = cellData;
+        });
+    }
+    })
+    .catch(error => console.error('Error fetching JSON:', error));
+</script>
+
+</body>
+</html>
